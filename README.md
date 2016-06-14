@@ -1,4 +1,4 @@
-# rabbitmq-for-geoevent
+# kafka-for-geoevent
 
 ArcGIS GeoEvent Extension sample Kafka connectors for connecting to Kafka message servers.
 
