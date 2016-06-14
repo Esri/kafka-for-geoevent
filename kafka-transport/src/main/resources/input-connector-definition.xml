@@ -1,0 +1,31 @@
+<connectorDefinition accessType="editable" label="Receive Text from Apache Kafka" name="kafka-text-in" type="inbound">
+	<description>Receives text from Apache Kafka and converts it to GeoEvents.</description>
+	<defaultName>kafka-text-in</defaultName>
+	<transport uri="com.esri.ges.transport.inbound/Kafka/10.4.1"/>
+	<adapter uri="com.esri.ges.adapter.inbound/Text/10.4.1"/>
+	<properties>
+		<shown>
+			<property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
+			<property label="Topic Name" name="topic" source="transport"/>
+		</shown>
+		<advanced>
+			<property default="1" label="Number Of Threads" name="numThreads" source="transport"/>
+			<property default="true" label="Create Unrecognized Event Definitions" name="CreateUnrecognizedGeoEventDefinitions" source="adapter"/>
+			<property default="\n" label="Message Separator" name="MessageSeparator" source="adapter"/>
+			<property default="," label="Attribute Separator" name="AttributeSeparator" source="adapter"/>
+			<property default="true" label="Incoming Data Contains GeoEvent Definition" name="IncomingDataContainsGeoEventDefinition" source="adapter"/>
+			<property default="false" label="Create Fixed GeoEvent Definitions" name="CreateFixedGeoEventDefinitions" source="adapter"/>
+			<property label="GeoEvent Definition Name (New)" name="NewFixedGeoEventDefinitionName" source="adapter"/>
+			<property label="GeoEvent Definition Name (Existing)" name="ExistingFixedGeoEventDefinitionName" source="adapter"/>
+			<property default="false" label="Build Geometry From Fields" name="BuildGeometryFromFields" source="adapter"/>
+			<property label="X Geometry Field" name="XGeometryField" source="adapter"/>
+			<property label="Y Geometry Field" name="YGeometryField" source="adapter"/>
+			<property label="Z Geometry Field" name="ZGeometryField" source="adapter"/>
+			<property label="wkid Geometry Field" name="WKIDGeometryField" source="adapter"/>
+			<property label="Well Known Text Geometry Field" name="WKTextGeometryField" source="adapter"/>
+			<property label="Expected Date Format" name="CustomDateFormat" source="adapter"/>
+			<property label="Language for Number Formatting" name="LocaleForNumberFormatter" source="adapter"/>
+		</advanced>
+		<hidden/>
+	</properties>
+</connectorDefinition>

@@ -1,0 +1,24 @@
+<connectorDefinition accessType="editable" label="Publish Text to Apache Kafka" name="kafka-text-out" type="outbound">
+	<defaultName>kafka-text-out</defaultName>
+	<description>Publishes GeoEvents as text to Apache Kafka.</description>
+	<adapter uri="com.esri.ges.adapter.outbound/Text/10.4.1"/>
+	<transport uri="com.esri.ges.transport.outbound/Kafka/10.4.1"/>
+	<properties>
+		<shown>
+			<property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
+			<property default="localhost:9092" label="Bootstrap Servers" name="bootstrap" source="transport"/>
+			<property label="Topic Name" name="topic" source="transport"/>
+		</shown>
+		<advanced>
+			<property default="1" label="Number of Partitions" name="partitions" source="transport"/>
+			<property default="1" label="Replication Factor" name="replicas" source="transport"/>
+			<property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
+			<property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
+			<property default="text/plain" label="MIME Type" name="mimeType" source="adapter"/>
+			<property default="ISO 8601 Format" label="Output Date Format" name="CustomDateFormatType" source="adapter"/>
+			<property label="Custom Date Format" name="CustomDateFormat" source="adapter"/>
+			<property label="Language for Number Formatting" name="LocaleForNumberFormatter" source="adapter"/>
+		</advanced>
+		<hidden/>
+	</properties>
+</connectorDefinition>
