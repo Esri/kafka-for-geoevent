@@ -45,16 +45,22 @@ import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
+
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.*;
 
 class KafkaInboundTransport extends InboundTransportBase implements Runnable {
   private static final BundleLogger LOGGER = BundleLoggerFactory.getLogger(KafkaInboundTransport.class);
   private KafkaEventConsumer consumer;
+  private ConsumerConfig consumerConfig;
   private String zkConnect;
   private int numThreads;
   private String topic;
+  private String groupId;
 
   KafkaInboundTransport(TransportDefinition definition) throws ComponentException {
     super(definition);
@@ -82,7 +88,8 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
           bb.clear();
         }
       }
-      catch (MessagingException e) {
+      catch (MessagingException e)
+      {
         LOGGER.error("", e);
       }
     }
@@ -93,16 +100,19 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
     zkConnect = getProperty("zkConnect").getValueAsString();
     numThreads = Converter.convertToInteger(getProperty("numThreads").getValueAsString(), 1);
     topic = getProperty("topic").getValueAsString();
+    groupId = getProperty("groupId").getValueAsString();
     super.afterPropertiesSet();
   }
 
   @Override
   public void validate() throws ValidationException {
     super.validate();
-    if (zkConnect == null || zkConnect.isEmpty())
+    if (zkConnect.isEmpty())
       throw new ValidationException(LOGGER.translate("ZKCONNECT_VALIDATE_ERROR"));
-    if (topic == null || topic.isEmpty())
+    if (topic.isEmpty())
       throw new ValidationException(LOGGER.translate("TOPIC_VALIDATE_ERROR"));
+    if (groupId.isEmpty())
+      throw new ValidationException(LOGGER.translate("GROUP_ID_VALIDATE_ERROR"));
     if (numThreads < 1)
       throw new ValidationException(LOGGER.translate("NUM_THREADS_VALIDATE_ERROR"));
     ZkClient zkClient = new ZkClient(zkConnect, 10000, 8000, ZKStringSerializer$.MODULE$);
@@ -112,6 +122,16 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
     zkClient.close();
     if (!topicExists)
       throw new ValidationException(LOGGER.translate("TOPIC_VALIDATE_ERROR"));
+    // Init Consumer Config
+    Properties props = new Properties()
+    {
+      { put("zookeeper.connect", zkConnect); }
+      { put("group.id", groupId); }
+      { put("zookeeper.session.timeout.ms", "400"); }
+      { put("zookeeper.sync.time.ms", "200"); }
+      { put("auto.commit.interval.ms", "1000"); }
+    };
+    consumerConfig = new ConsumerConfig(props);
   }
 
   @Override
@@ -128,16 +148,18 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
   @Override
   public synchronized void stop()
   {
-    if (!RunningState.STOPPED.equals(getRunningState()))
-      disconnect("");
+    disconnect("");
   }
 
-  private synchronized void disconnect(String reason) {
-    setRunningState(RunningState.STOPPING);
-    if (consumer != null)
-      consumer.setDisconnected(null);
-    setErrorMessage(reason);
-    setRunningState(RunningState.STOPPED);
+  private synchronized void disconnect(String reason)
+  {
+    if (!RunningState.STOPPED.equals(getRunningState()))
+    {
+      setRunningState(RunningState.STOPPING);
+      shutdownConsumer();
+      setErrorMessage(reason);
+      setRunningState(RunningState.STOPPED);
+    }
   }
 
   private synchronized void connect()
@@ -145,13 +167,22 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
     disconnect("");
     setRunningState(RunningState.STARTING);
     if (consumer == null)
-      consumer = new KafkaEventConsumer(new EventDestination(topic), zkConnect, numThreads);
-    consumer.setConnected();
-    new Thread(this).start();
+      consumer = new KafkaEventConsumer();
+    if (consumer.getStatusDetails().isEmpty()) // no errors reported while instantiating a consumer
+    {
+      consumer.setConnected();
+      new Thread(this).start();
+    }
+    else
+    {
+      setRunningState(RunningState.ERROR);
+      setErrorMessage(consumer.getStatusDetails());
+    }
   }
 
   private synchronized void shutdownConsumer() {
     if (consumer != null) {
+      consumer.setDisconnected(null);
       consumer.shutdown();
       consumer = null;
     }
@@ -165,31 +196,44 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
   private class KafkaEventConsumer extends KafkaComponentBase {
     private Semaphore connectionLock;
     private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<byte[]>();
-    private ConsumerConnector connector;
+    private ConsumerConnector consumer;
     private ExecutorService executor;
-    private final int	numThreads;
 
-    KafkaEventConsumer(EventDestination origin, String zkConnect, int numThreads) {
-      super(origin);
-      this.numThreads = numThreads;
-      props.put("zookeeper.connect", zkConnect);
-      props.put("group.id", destination.getName());
-      props.put("zookeeper.session.timeout.ms", "400");
-      props.put("zookeeper.sync.time.ms", "200");
-      props.put("auto.commit.interval.ms", "1000");
-      connector = Consumer.createJavaConsumerConnector(new ConsumerConfig(props));
-      executor = Executors.newFixedThreadPool(numThreads);
-      // setup the semaphore connection lock
-      connectionLock = new Semaphore(1);
-      int threadNumber = 0;
-      for (final KafkaStream<byte[],byte[]> stream : connector.createMessageStreams(
-          new HashMap<String,Integer>() {
+    KafkaEventConsumer() {
+      super(new EventDestination(topic));
+      connectionLock = new Semaphore(2);
+      Map<String, Integer> topicCountMap =
+          new HashMap<String,Integer>()
+          {
             {
-              put(destination.getName(), numThreads);
+              put(topic, new Integer(numThreads));
             }
+          };
+      consumer = Consumer.createJavaConsumerConnector(consumerConfig);
+      try
+      {
+        Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCountMap);
+        List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
+        executor = Executors.newFixedThreadPool(numThreads);
+        int threadNumber = 0;
+        for (final KafkaStream stream : streams)
+        {
+          try
+          {
+            executor.execute(new KafkaQueueingConsumer(stream, threadNumber++));
           }
-      ).get(destination.getName()))
-        executor.submit(new KafkaQueueingConsumer(stream, threadNumber++));
+          catch (Throwable th)
+          {
+            System.out.println(th.getMessage());
+            setDisconnected(th);
+          }
+        }
+      }
+      catch (Throwable th)
+      {
+        setDisconnected(th);
+        setErrorMessage(th.getMessage());
+      }
     }
 
     public synchronized void init() throws MessagingException
@@ -231,7 +275,7 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
 
     @Override
     protected void setDisconnected(Throwable th) {
-      if (connectionLock.availablePermits() == 1)
+      if (connectionLock.availablePermits() == 2)
         connectionLock.drainPermits();
       super.setDisconnected(th);
     }
@@ -244,10 +288,10 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
     @Override
     public synchronized void disconnect()
     {
-      if (connector != null)
+      if (consumer != null)
       {
-        connector.shutdown();
-        connector = null;
+        consumer.shutdown();
+        consumer = null;
       }
       if (executor != null)
       {
@@ -278,9 +322,31 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
 
       public void run() {
         LOGGER.info("Starting Kafka consuming thread #" + threadNumber);
-        if (isConnected())
-          for (ConsumerIterator<byte[], byte[]> it = stream.iterator(); it.hasNext();)
-            queue.add(it.next().message());
+        while (getStatusDetails().isEmpty())
+        {
+          if (!isConnected())
+          {
+            try
+            {
+              connectionLock.acquire(); // blocks execution until a connection has been recovered
+            }
+            catch (InterruptedException error)
+            {
+              ; // ignored
+            }
+          }
+          for (ConsumerIterator<byte[], byte[]> it = stream.iterator(); it.hasNext(); )
+          {
+            try
+            {
+              queue.offer(it.next().message(), 100, TimeUnit.MILLISECONDS);
+            }
+            catch (InterruptedException ex)
+            {
+              ; //ignore
+            }
+          }
+        }
         LOGGER.info("Shutting down Kafka consuming thread #" + threadNumber);
       }
     }

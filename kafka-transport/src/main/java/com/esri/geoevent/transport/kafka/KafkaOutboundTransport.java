@@ -67,8 +67,12 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
   @Override
   public void receive(ByteBuffer byteBuffer, String channelId, GeoEvent geoEvent) {
     try {
-      if (producer != null && geoEvent != null)
+      if (geoEvent != null)
+      {
+        if (producer == null)
+          producer = new KafkaEventProducer(new EventDestination(topic), bootstrap);
         producer.send(byteBuffer, geoEvent.hashCode());
+      }
     }
     catch (MessagingException e)
     {
@@ -135,9 +139,6 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
 
   private synchronized void connect() {
     disconnect("");
-    setRunningState(RunningState.STARTING);
-    if (producer == null)
-      producer = new KafkaEventProducer(new EventDestination(topic), bootstrap);
     setRunningState(RunningState.STARTED);
   }
 

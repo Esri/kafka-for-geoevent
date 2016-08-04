@@ -25,6 +25,7 @@
 package com.esri.geoevent.transport.kafka;
 
 import com.esri.ges.messaging.*;
+
 import java.util.Observable;
 import java.util.Properties;
 
@@ -56,7 +57,8 @@ abstract class KafkaComponentBase extends Observable implements EventDestination
 
   protected void setDisconnected(Throwable th) {
     connected = false;
-    details = (th != null) ? th.getMessage() : "";
+    if (th != null)
+      details = th.getMessage();
   }
 
   @Override

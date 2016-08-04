@@ -43,6 +43,7 @@ public class KafkaInboundTransportDefinition extends TransportDefinitionBase {
       propertyDefinitions.put("zkConnect", new PropertyDefinition("zkConnect", PropertyType.String, "localhost:2181", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_LBL}", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_DESC}", true, false));
       propertyDefinitions.put("numThreads", new PropertyDefinition("numThreads", PropertyType.Integer, "1", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_LBL}", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_DESC}", true, false));
       propertyDefinitions.put("topic", new PropertyDefinition("topic", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
+      propertyDefinitions.put("groupId", new PropertyDefinition("groupId", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.GROUOP_ID_LBL}", "${com.esri.geoevent.transport.kafka-transport.GROUOP_ID_DESC}", true, false));
     }
     catch (PropertyException e)
     {
