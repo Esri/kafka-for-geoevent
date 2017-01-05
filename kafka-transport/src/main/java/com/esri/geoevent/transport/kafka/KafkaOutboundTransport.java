@@ -38,11 +38,13 @@ import com.esri.ges.transport.OutboundTransportBase;
 import com.esri.ges.transport.TransportDefinition;
 import com.esri.ges.util.Converter;
 import kafka.admin.AdminUtils;
+import kafka.admin.RackAwareMode;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.kafka.clients.producer.*;
+
 import java.nio.ByteBuffer;
 import java.util.Properties;
 
@@ -123,7 +125,7 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
     ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnect), false);
     if (AdminUtils.topicExists(zkUtils, topic))
       zkClient.deleteRecursive(ZkUtils.getTopicPath(topic));
-    AdminUtils.createTopic(zkUtils, topic, partitions, replicas, new Properties());
+    AdminUtils.createTopic(zkUtils, topic, partitions, replicas, new Properties(), RackAwareMode.Disabled$.MODULE$);
     zkClient.close();
   }
 

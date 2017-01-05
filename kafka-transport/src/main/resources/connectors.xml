@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<template productVersion="10.5.0">
+    <geoEventServices/>
+    <inputs/>
+    <outputs/>
+    <geoEventDefinitions/>
+    <tags/>
+    <connectors>
+        <connector accessType="editable" label="Publish Text to Apache Kafka" name="kafka-text-out" type="outbound">
+            <adapter uri="com.esri.ges.adapter.outbound/Text/10.5.0"/>
+            <defaultName>kafka-text-out</defaultName>
+            <description>Publishes GeoEvents as text to Apache Kafka.</description>
+            <properties>
+                <advanced>
+                    <property default="1" label="Number Of Partitions" name="partitions" source="transport"/>
+                    <property default="0" label="Replication Factor" name="replicas" source="transport"/>
+                    <property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
+                    <property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
+                    <property default="text/plain" label="MIME Type" name="mimeType" source="adapter"/>
+                    <property default="ISO 8601 Format" label="Output Date Format" name="CustomDateFormatType" source="adapter"/>
+                    <property label="Custom Date Format" name="CustomDateFormat" source="adapter"/>
+                    <property label="Language for Number Formatting" name="LocaleForNumberFormatter" source="adapter"/>
+                </advanced>
+                <hidden/>
+                <shown>
+                    <property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
+                    <property default="localhost:9092" label="Bootstrap Servers" name="bootstrap" source="transport"/>
+                    <property label="Topic Name" name="topic" source="transport"/>
+                </shown>
+            </properties>
+            <transport uri="com.esri.geoevent.transport.outbound/Kafka/10.5.0"/>
+        </connector>
+        <connector accessType="editable" label="Receive Text from Apache Kafka" name="kafka-text-in" type="inbound">
+            <adapter uri="com.esri.ges.adapter.inbound/Text/10.5.0"/>
+            <defaultName>kafka-text-in</defaultName>
+            <description>Receives text from Apache Kafka and converts it to GeoEvents.</description>
+            <properties>
+                <advanced>
+                    <property default="1" label="Number Of Threads" name="numThreads" source="transport"/>
+                    <property default="true" label="Create Unrecognized Event Definitions" name="CreateUnrecognizedGeoEventDefinitions" source="adapter"/>
+                    <property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
+                    <property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
+                    <property default="true" label="Incoming Data Contains GeoEvent Definition" name="IncomingDataContainsGeoEventDefinition" source="adapter"/>
+                    <property default="false" label="Create Fixed GeoEvent Definitions" name="CreateFixedGeoEventDefinitions" source="adapter"/>
+                    <property label="GeoEvent Definition Name (New)" name="NewFixedGeoEventDefinitionName" source="adapter"/>
+                    <property label="GeoEvent Definition Name (Existing)" name="ExistingFixedGeoEventDefinitionName" source="adapter"/>
+                    <property default="false" label="Build Geometry From Fields" name="BuildGeometryFromFields" source="adapter"/>
+                    <property label="X Geometry Field" name="XGeometryField" source="adapter"/>
+                    <property label="Y Geometry Field" name="YGeometryField" source="adapter"/>
+                    <property label="Z Geometry Field" name="ZGeometryField" source="adapter"/>
+                    <property label="wkid Geometry Field" name="WKIDGeometryField" source="adapter"/>
+                    <property label="Well Known Text Geometry Field" name="WKTextGeometryField" source="adapter"/>
+                    <property label="Expected Date Format" name="CustomDateFormat" source="adapter"/>
+                    <property label="Language for Number Formatting" name="LocaleForNumberFormatter" source="adapter"/>
+                </advanced>
+                <hidden/>
+                <shown>
+                    <property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
+                    <property label="Topic Name" name="topic" source="transport"/>
+                    <property label="Consumer Group Id" name="groupId" source="transport"/>
+                </shown>
+            </properties>
+            <transport uri="com.esri.geoevent.transport.inbound/Kafka/10.5.0"/>
+        </connector>
+    </connectors>
+</template>

@@ -68,7 +68,7 @@ public class KafkaInboundTransportDefinition extends TransportDefinitionBase {
   @Override
   public String getVersion()
   {
-    return "10.4.1";
+    return "10.5.0";
   }
 
   @Override
