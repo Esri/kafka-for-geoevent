@@ -11,7 +11,7 @@
 		<contact.address>geoevent@esri.com</contact.address>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.bundle.plugin.version>2.3.6</maven.bundle.plugin.version>
-		<kafka.version>0.10.1.0</kafka.version>
+		<kafka.version>0.10.1.1</kafka.version>
 	</properties>
 	<modules>
 		<module>kafka-transport</module>
@@ -71,6 +71,11 @@
 			<artifactId>zkclient</artifactId>
 			<version>0.8</version>
 		</dependency>
+		<dependency>
+			<groupId>org.scala-lang.modules</groupId>
+			<artifactId>scala-parser-combinators_2.11</artifactId>
+			<version>1.0.5</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<pluginManagement>
@@ -89,8 +94,9 @@
 								lz4;scope=compile|runtime;inline=true,
 								snappy-java;scope=compile|runtime;inline=true,
 								kafka-clients;scope=compile|runtime;inline=true,
-								kafka_2.10;scope=compile|runtime;inline=true,
-								zkclient;scope=compile|runtime;inline=true
+								kafka_2.11;scope=compile|runtime;inline=true,
+								zkclient;scope=compile|runtime;inline=true,
+								scala-parser-combinators_2.11;scope=compile|runtime;inline=true
 							</Embed-Dependency>
 						</instructions>
 					</configuration>

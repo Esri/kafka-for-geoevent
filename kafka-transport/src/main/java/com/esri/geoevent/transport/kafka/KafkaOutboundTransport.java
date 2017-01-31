@@ -125,7 +125,21 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
     ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnect), false);
     if (AdminUtils.topicExists(zkUtils, topic))
       zkClient.deleteRecursive(ZkUtils.getTopicPath(topic));
-    AdminUtils.createTopic(zkUtils, topic, partitions, replicas, new Properties(), RackAwareMode.Disabled$.MODULE$);
+
+    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+    try
+    {
+
+      Thread.currentThread().setContextClassLoader(null);
+      AdminUtils.createTopic(zkUtils, topic, partitions, replicas, new Properties(), RackAwareMode.Disabled$.MODULE$);
+    }
+    catch (Throwable th) {
+      LOGGER.error(th.getMessage(), th);
+      throw new ValidationException(th.getMessage());
+    }
+    finally {
+      Thread.currentThread().setContextClassLoader(classLoader);
+    }
     zkClient.close();
   }
 
