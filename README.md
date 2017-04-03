@@ -1,6 +1,6 @@
 # kafka-for-geoevent
 
-ArcGIS GeoEvent Extension sample Kafka connectors for connecting to Kafka message servers.
+ArcGIS GeoEvent Server sample Kafka connectors for connecting to Kafka message servers to send and/or receive text messages.
 
 ![App](kafka-for-geoevent.png?raw=true)
 
@@ -12,24 +12,24 @@ ArcGIS GeoEvent Extension sample Kafka connectors for connecting to Kafka messag
 
 Building the source code:
 
-1. Make sure Maven and ArcGIS GeoEvent Extension SDK are installed on your machine.
+1. Make sure Maven and ArcGIS GeoEvent Server SDK are installed on your machine.
 2. Run 'mvn install -Dcontact.address=[YourContactEmailAddress]'
 
 Installing the built jar files:
 
-1. Copy the *.jar files under the 'target' sub-folder(s) into the [ArcGIS-GeoEvent-Extension-Install-Directory]/deploy folder.
+1. Copy the *.jar files under the 'target' sub-folder(s) into the [ArcGIS-GeoEvent-Server-Install-Directory]/deploy folder.
 
 ## Requirements
 
-* ArcGIS GeoEvent Extension for Server.
-* ArcGIS GeoEvent Extension SDK.
+* ArcGIS GeoEvent Server.
+* ArcGIS GeoEvent Server SDK.
 * Java JDK 1.8 or greater.
 * Maven.
 
 ## Resources
 
 * [Download the connector's tutorial](http://www.arcgis.com/home/item.html?id=7f94ec2a3eb944c79e98fe854d60d671) from the ArcGIS GeoEvent Gallery
-* [ArcGIS GeoEvent Extension for Server resources](http://links.esri.com/geoevent)
+* [ArcGIS GeoEvent Server resources](http://links.esri.com/geoevent)
 * [ArcGIS Blog](http://blogs.esri.com/esri/arcgis/)
 * [twitter@esri](http://twitter.com/esri)
 
@@ -59,5 +59,5 @@ limitations under the License.
 A copy of the license is available in the repository's [license.txt](license.txt?raw=true) file.
 
 [](ArcGIS, GeoEvent, Extension, Processor)
-[](Esri Tags: ArcGIS GeoEvent Extension for Server)
+[](Esri Tags: ArcGIS GeoEvent Server)
 [](Esri Language: Java)
