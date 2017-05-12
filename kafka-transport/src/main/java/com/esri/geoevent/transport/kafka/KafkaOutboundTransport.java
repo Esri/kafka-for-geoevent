@@ -56,6 +56,7 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
   private String topic;
   private int partitions;
   private int replicas;
+  private String partitionKeyTag;
 
   KafkaOutboundTransport(TransportDefinition definition) throws ComponentException {
     super(definition);
@@ -69,16 +70,38 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
   @Override
   public void receive(ByteBuffer byteBuffer, String channelId, GeoEvent geoEvent) {
     try {
-      if (geoEvent != null)
-      {
-        if (producer == null)
+      if (geoEvent != null) {
+        if (producer == null) {
           producer = new KafkaEventProducer(new EventDestination(topic), bootstrap);
-        producer.send(byteBuffer, geoEvent.hashCode());
+        }
+
+        Object partitionKey = null;
+
+        if(partitionKeyTag != null && !partitionKeyTag.isEmpty())
+        {
+          final int tagIndex = geoEvent.getGeoEventDefinition().getIndexOf(partitionKeyTag);
+
+          if (tagIndex >= 0) {
+            partitionKey = geoEvent.getField(tagIndex);
+          }
+          else
+          {
+            final String warnMsg = LOGGER.translate("NO_MATCHING_TAG_WARNING",
+                    geoEvent.getGeoEventDefinition()
+                            .getName(),
+                    partitionKeyTag);
+            LOGGER.warn(warnMsg);
+          }
+        }
+
+        producer.send(byteBuffer, partitionKey);
       }
     }
     catch (MessagingException e)
     {
-      ;
+      if(LOGGER.isDebugEnabled()) {
+        LOGGER.debug(e.getMessage(), e.getCause());
+      }
     }
   }
 
@@ -108,6 +131,8 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
     bootstrap = getProperty("bootstrap").getValueAsString();
     topic = getProperty("topic").getValueAsString();
     partitions = Converter.convertToInteger(getProperty("partitions").getValueAsString(), 1);
+    this.partitionKeyTag = getProperty("partitionKeyTag").getValueAsString();
+
     replicas = Converter.convertToInteger(getProperty("replicas").getValueAsString(), 0);
   }
 
@@ -173,6 +198,30 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
   private class KafkaEventProducer extends KafkaComponentBase {
     private KafkaProducer<byte[], byte[]> producer;
 
+    private final Callback completionCallback = new Callback() {
+      @Override
+      public void onCompletion(RecordMetadata metadata, Exception e) {
+        if (e != null)
+        {
+          final String errorMsg = LOGGER.translate("KAFKA_SEND_FAILURE_ERROR", destination.getName(), e.getMessage());
+          LOGGER.error(errorMsg);
+          // offset = metadata.offset();
+          return;
+        }
+
+        if(LOGGER.isDebugEnabled())
+        {
+          final String debugMsg = LOGGER.translate("KAFKA_SENT_RECORD_DEBUG",
+                  metadata.topic(),
+                  metadata.partition(),
+                  metadata.offset(),
+                  metadata.serializedKeySize(),
+                  metadata.serializedValueSize());
+          LOGGER.debug(debugMsg);
+        }
+      }
+    };
+
     KafkaEventProducer(EventDestination destination, String bootstrap) {
       super(destination);
       // http://kafka.apache.org/documentation.html#producerconfigs
@@ -201,28 +250,33 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
       }
     }
 
-    public void send(final ByteBuffer bb, int h) throws MessagingException {
+    void send(final ByteBuffer bb, Object partitionKey) throws MessagingException {
       // wait to send messages if we are not connected
-      if (isConnected())
-      {
-        byte[] key = new byte[4];
-        key[3] = (byte) (h & 0xFF);
-        key[2] = (byte) ((h >> 8) & 0xFF);
-        key[1] = (byte) ((h >> 16) & 0xFF);
-        key[0] = (byte) ((h >> 24) & 0xFF);
-        ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(destination.getName(), key, bb.array());
-        producer.send(record, new Callback() {
-          @Override
-          public void onCompletion(RecordMetadata metadata, Exception e) {
-            if (e != null) {
-              String errorMsg = LOGGER.translate("KAFKA_SEND_FAILURE_ERROR", destination.getName(), e.getMessage());
-              LOGGER.error(errorMsg);
-            }
-            else
-              LOGGER.debug("The offset of the record we just sent is: " + metadata.offset());
-          }
-        });
+      if (isConnected()) {
+        final ProducerRecord<byte[], byte[]> record;
+
+        if (partitionKey != null) {
+          // TODO: Support serializing based on key data type instead of using hashcode (e.g. StringSerializer)
+          final int h = partitionKey.hashCode();
+          final byte[] key = new byte[]{
+                  (byte) (h >>> 24),
+                  (byte) (h >>> 16),
+                  (byte) (h >>> 8),
+                  (byte) h
+          };
+          record = new ProducerRecord<byte[], byte[]>(
+                  destination.getName(),
+                  key,
+                  bb.array());
+        } else {
+          record = new ProducerRecord<byte[], byte[]>(
+                  destination.getName(),
+                  bb.array());
+        }
+
+        producer.send(record, completionCallback);
       }
+
     }
 
     @Override

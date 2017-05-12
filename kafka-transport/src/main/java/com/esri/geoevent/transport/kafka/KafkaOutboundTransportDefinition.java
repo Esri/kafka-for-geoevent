@@ -42,7 +42,15 @@ class KafkaOutboundTransportDefinition extends TransportDefinitionBase {
       propertyDefinitions.put("bootstrap", new PropertyDefinition("bootstrap", PropertyType.String, "localhost:9092", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_LBL}", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_DESC}", true, false));
       propertyDefinitions.put("topic", new PropertyDefinition("topic", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
       propertyDefinitions.put("partitions", new PropertyDefinition("partitions", PropertyType.Integer, "1", "${com.esri.geoevent.transport.kafka-transport.PARTITIONS_LBL}", "${com.esri.geoevent.transport.kafka-transport.PARTITIONS_DESC}", true, false));
-      propertyDefinitions.put("replicas", new PropertyDefinition("replicas", PropertyType.Integer, "0", "${com.esri.geoevent.transport.kafka-transport.REPLICAS_LBL}", "${com.esri.geoevent.transport.kafka-transport.REPLICAS_DESC}", true, false));
+      propertyDefinitions.put("replicas", new PropertyDefinition("replicas", PropertyType.Integer, "1","${com.esri.geoevent.transport.kafka-transport.REPLICAS_LBL}","${com.esri.geoevent.transport.kafka-transport.REPLICAS_DESC}",true,false));
+      propertyDefinitions.put("partitionKeyTag",
+              new PropertyDefinition(
+                      "partitionKeyTag",
+                      PropertyType.String,"TRACK_ID",
+                      "${com.esri.geoevent.transport.kafka-transport.PARTITION_KEY_TAG_LBL}",
+                      "${com.esri.geoevent.transport.kafka-transport.PARTITION_KEY_TAG_DESC}",
+                      false,
+                      false));
     }
     catch (PropertyException e)
     {
