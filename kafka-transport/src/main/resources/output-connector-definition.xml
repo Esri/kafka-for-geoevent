@@ -11,7 +11,7 @@
 		</shown>
 		<advanced>
 			<property default="1" label="Number of Partitions" name="partitions" source="transport"/>
-			<property default="TRACK_ID" label="Partition Key Tag" name="partitionKeyTag" source="transport"/>
+			<property default="" label="Partition Key Tag" name="partitionKeyTag" source="transport"/>
 			<property default="1" label="Replication Factor" name="replicas" source="transport"/>
 			<property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
 			<property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
