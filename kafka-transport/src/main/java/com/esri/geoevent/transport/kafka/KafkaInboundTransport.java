@@ -41,6 +41,7 @@ import kafka.consumer.ConsumerConfig;
 import kafka.consumer.ConsumerIterator;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
+import kafka.message.MessageAndMetadata;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkClient;
@@ -79,12 +80,14 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
     {
       try
       {
-        byte[] bytes = consumer.receive();
-        if (bytes != null && bytes.length > 0) {
+        MessageAndMetadata<byte[], byte[]> mm = consumer.receive();
+        if (mm != null && mm.message().length > 0) {
+          byte[] bytes = mm.message();
+          String channelId = new String(mm.key());
           ByteBuffer bb = ByteBuffer.allocate(bytes.length);
           bb.put(bytes);
           bb.flip();
-          byteListener.receive(bb, "");
+          byteListener.receive(bb, channelId);
           bb.clear();
         }
       }
@@ -195,7 +198,7 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
 
   private class KafkaEventConsumer extends KafkaComponentBase {
     private Semaphore connectionLock;
-    private final BlockingQueue<byte[]> queue = new LinkedBlockingQueue<byte[]>();
+    private final BlockingQueue<MessageAndMetadata<byte[], byte[]>> queue = new LinkedBlockingQueue<>();
     private ConsumerConnector consumer;
     private ExecutorService executor;
 
@@ -216,7 +219,7 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
         List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
         executor = Executors.newFixedThreadPool(numThreads);
         int threadNumber = 0;
-        for (final KafkaStream stream : streams)
+        for (final KafkaStream<byte[], byte[]> stream : streams)
         {
           try
           {
@@ -241,7 +244,7 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
       ;
     }
 
-    byte[] receive() throws MessagingException {
+    MessageAndMetadata<byte[], byte[]> receive() throws MessagingException {
       // wait to receive messages if we are not connected
       if (!isConnected())
       {
@@ -254,16 +257,16 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
           ; // ignored
         }
       }
-      byte[] bytes = null;
+      MessageAndMetadata<byte[], byte[]> mm = null;
       try
       {
-        bytes = queue.poll(100, TimeUnit.MILLISECONDS);
+        mm = queue.poll(100, TimeUnit.MILLISECONDS);
       }
       catch (Exception e)
       {
         ; // ignore
       }
-      return bytes;
+      return mm;
     }
 
     @Override
@@ -339,7 +342,8 @@ class KafkaInboundTransport extends InboundTransportBase implements Runnable {
           {
             try
             {
-              queue.offer(it.next().message(), 100, TimeUnit.MILLISECONDS);
+              MessageAndMetadata<byte[], byte[]> mm = it.next();
+              queue.offer(mm, 100, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ex)
             {
