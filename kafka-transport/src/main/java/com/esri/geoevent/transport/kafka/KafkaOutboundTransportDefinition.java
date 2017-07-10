@@ -38,11 +38,8 @@ class KafkaOutboundTransportDefinition extends TransportDefinitionBase {
   KafkaOutboundTransportDefinition() {
     super(TransportType.OUTBOUND);
     try {
-      propertyDefinitions.put("zkConnect", new PropertyDefinition("zkConnect", PropertyType.String, "localhost:2181", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_LBL}", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_DESC}", true, false));
-      propertyDefinitions.put("bootstrap", new PropertyDefinition("bootstrap", PropertyType.String, "localhost:9092", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_LBL}", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_DESC}", true, false));
-      propertyDefinitions.put("topic", new PropertyDefinition("topic", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
-      propertyDefinitions.put("partitions", new PropertyDefinition("partitions", PropertyType.Integer, "1", "${com.esri.geoevent.transport.kafka-transport.PARTITIONS_LBL}", "${com.esri.geoevent.transport.kafka-transport.PARTITIONS_DESC}", true, false));
-      propertyDefinitions.put("replicas", new PropertyDefinition("replicas", PropertyType.Integer, "0", "${com.esri.geoevent.transport.kafka-transport.REPLICAS_LBL}", "${com.esri.geoevent.transport.kafka-transport.REPLICAS_DESC}", true, false));
+        propertyDefinitions.put("bootstrap", new PropertyDefinition("bootstrap", PropertyType.String, "localhost:9092", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_LBL}", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_DESC}", true, false));
+        propertyDefinitions.put("topic", new PropertyDefinition("topic", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
     }
     catch (PropertyException e)
     {

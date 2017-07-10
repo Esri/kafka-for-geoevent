@@ -36,26 +36,19 @@ import com.esri.ges.messaging.MessagingException;
 import com.esri.ges.transport.GeoEventAwareTransport;
 import com.esri.ges.transport.OutboundTransportBase;
 import com.esri.ges.transport.TransportDefinition;
-import com.esri.ges.util.Converter;
-import kafka.admin.AdminUtils;
-import kafka.admin.RackAwareMode;
-import kafka.utils.ZKStringSerializer$;
-import kafka.utils.ZkUtils;
-import org.I0Itec.zkclient.ZkClient;
-import org.I0Itec.zkclient.ZkConnection;
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.Callback;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 
 import java.nio.ByteBuffer;
-import java.util.Properties;
 
 class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAwareTransport {
   private static final BundleLogger LOGGER	= BundleLoggerFactory.getLogger(KafkaOutboundTransport.class);
   private KafkaEventProducer producer;
-  private String zkConnect = "localhost:2181";
   private String bootstrap = "localhost:9092";
   private String topic;
-  private int partitions;
-  private int replicas;
 
   KafkaOutboundTransport(TransportDefinition definition) throws ComponentException {
     super(definition);
@@ -78,7 +71,9 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
     }
     catch (MessagingException e)
     {
-      ;
+      if(LOGGER.isDebugEnabled()) {
+        LOGGER.debug(e.getMessage(), e.getCause());
+      }
     }
   }
 
@@ -104,43 +99,17 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
   public void afterPropertiesSet() {
     super.afterPropertiesSet();
     shutdownProducer();
-    zkConnect = getProperty("zkConnect").getValueAsString();
     bootstrap = getProperty("bootstrap").getValueAsString();
     topic = getProperty("topic").getValueAsString();
-    partitions = Converter.convertToInteger(getProperty("partitions").getValueAsString(), 1);
-    replicas = Converter.convertToInteger(getProperty("replicas").getValueAsString(), 0);
   }
 
   @Override
   public void validate() throws ValidationException {
     super.validate();
-    if (zkConnect == null || zkConnect.isEmpty())
-      throw new ValidationException(LOGGER.translate("ZKCONNECT_VALIDATE_ERROR"));
     if (bootstrap == null || bootstrap.isEmpty())
       throw new ValidationException(LOGGER.translate("BOOTSTRAP_VALIDATE_ERROR"));
     if (topic == null || topic.isEmpty())
       throw new ValidationException(LOGGER.translate("TOPIC_VALIDATE_ERROR"));
-    ZkClient zkClient = new ZkClient(zkConnect, 10000, 8000, ZKStringSerializer$.MODULE$);
-    // Security for Kafka was added in Kafka 0.9.0.0 -> isSecureKafkaCluster = false
-    ZkUtils zkUtils = new ZkUtils(zkClient, new ZkConnection(zkConnect), false);
-    if (AdminUtils.topicExists(zkUtils, topic))
-      zkClient.deleteRecursive(ZkUtils.getTopicPath(topic));
-
-    ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-    try
-    {
-
-      Thread.currentThread().setContextClassLoader(null);
-      AdminUtils.createTopic(zkUtils, topic, partitions, replicas, new Properties(), RackAwareMode.Disabled$.MODULE$);
-    }
-    catch (Throwable th) {
-      LOGGER.error(th.getMessage(), th);
-      throw new ValidationException(th.getMessage());
-    }
-    finally {
-      Thread.currentThread().setContextClassLoader(classLoader);
-    }
-    zkClient.close();
   }
 
   private synchronized void disconnect(String reason) {

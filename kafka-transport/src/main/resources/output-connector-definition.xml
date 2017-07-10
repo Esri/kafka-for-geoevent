@@ -5,13 +5,10 @@
 	<transport uri="com.esri.ges.transport.outbound/Kafka/10.5.0"/>
 	<properties>
 		<shown>
-			<property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
 			<property default="localhost:9092" label="Bootstrap Servers" name="bootstrap" source="transport"/>
-			<property label="Topic Name" name="topic" source="transport"/>
+			<property label="Topic Name (Existing)" name="topic" source="transport"/>
 		</shown>
 		<advanced>
-			<property default="1" label="Number of Partitions" name="partitions" source="transport"/>
-			<property default="1" label="Replication Factor" name="replicas" source="transport"/>
 			<property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
 			<property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
 			<property default="text/plain" label="MIME Type" name="mimeType" source="adapter"/>

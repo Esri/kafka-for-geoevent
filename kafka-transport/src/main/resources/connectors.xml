@@ -12,8 +12,6 @@
             <description>Publishes GeoEvents as text to Apache Kafka.</description>
             <properties>
                 <advanced>
-                    <property default="1" label="Number Of Partitions" name="partitions" source="transport"/>
-                    <property default="0" label="Replication Factor" name="replicas" source="transport"/>
                     <property default="\n" label="Event Separator" name="MessageSeparator" source="adapter"/>
                     <property default="," label="Field Separator" name="AttributeSeparator" source="adapter"/>
                     <property default="text/plain" label="MIME Type" name="mimeType" source="adapter"/>
@@ -23,9 +21,8 @@
                 </advanced>
                 <hidden/>
                 <shown>
-                    <property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
                     <property default="localhost:9092" label="Bootstrap Servers" name="bootstrap" source="transport"/>
-                    <property label="Topic Name" name="topic" source="transport"/>
+                    <property label="Topic Name (Existing)" name="topic" source="transport"/>
                 </shown>
             </properties>
             <transport uri="com.esri.geoevent.transport.outbound/Kafka/10.5.0"/>
