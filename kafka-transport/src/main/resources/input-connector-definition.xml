@@ -1,8 +1,8 @@
 <connectorDefinition accessType="editable" label="Receive Text from Apache Kafka" name="kafka-text-in" type="inbound">
 	<description>Receives text from Apache Kafka and converts it to GeoEvents.</description>
 	<defaultName>kafka-text-in</defaultName>
-	<transport uri="com.esri.ges.transport.inbound/Kafka/10.5.0"/>
-	<adapter uri="com.esri.ges.adapter.inbound/Text/10.5.0"/>
+	<transport uri="com.esri.ges.transport.inbound/Kafka/10.6.0"/>
+	<adapter uri="com.esri.ges.adapter.inbound/Text/10.6.0"/>
 	<properties>
 		<shown>
 			<property default="localhost:2181" label="Zookeeper Connection String" name="zkConnect" source="transport"/>
