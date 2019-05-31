@@ -1,29 +1,6 @@
-/*
-  Copyright 1995-2016 Esri
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
-  For additional information, contact:
-  Environmental Systems Research Institute, Inc.
-  Attn: Contracts Dept
-  380 New York Street
-  Redlands, California, USA 92373
-
-  email: contracts@esri.com
-*/
-
 package com.esri.geoevent.transport.kafka;
 
+import com.esri.ges.core.property.LabeledValue;
 import com.esri.ges.core.property.PropertyDefinition;
 import com.esri.ges.core.property.PropertyException;
 import com.esri.ges.core.property.PropertyType;
@@ -32,18 +9,40 @@ import com.esri.ges.framework.i18n.BundleLoggerFactory;
 import com.esri.ges.transport.TransportDefinitionBase;
 import com.esri.ges.transport.TransportType;
 
-public class KafkaInboundTransportDefinition extends TransportDefinitionBase {
-  private static final BundleLogger	LOGGER	= BundleLoggerFactory.getLogger(KafkaInboundTransportDefinition.class);
+import java.util.ArrayList;
+import java.util.List;
+
+public class KafkaInboundTransportDefinition extends TransportDefinitionBase
+{
+  private static final BundleLogger LOGGER                   = BundleLoggerFactory.getLogger(KafkaInboundTransportDefinition.class);
+  public static final  String       BOOTSTRAP_SERVERS        = "bootstrapServers";
+  public static final  String       NUM_THREADS              = "numThreads";
+  public static final  String       TOPIC                    = "topic";
+  public static final  String       REQUIRE_AUTH             = "requireAuth";
+  public static final  String       AUTH_TYPE                = "authType";
+  public static final  String       TLS                      = "TLS";
+  public static final  String       SASL_KERBEROS            = "SASL/Kerberos";
+  public static final  String       CREDENTIAL_FILE_LOCATION = "credentialFileLocation";
+  public static final  String       FILENAME                 = "filename";
 
   public KafkaInboundTransportDefinition()
   {
     super(TransportType.INBOUND);
     try
     {
-      propertyDefinitions.put("zkConnect", new PropertyDefinition("zkConnect", PropertyType.String, "localhost:2181", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_LBL}", "${com.esri.geoevent.transport.kafka-transport.ZKCONNECT_DESC}", true, false));
-      propertyDefinitions.put("numThreads", new PropertyDefinition("numThreads", PropertyType.Integer, "1", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_LBL}", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_DESC}", true, false));
-      propertyDefinitions.put("topic", new PropertyDefinition("topic", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
-      propertyDefinitions.put("groupId", new PropertyDefinition("groupId", PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.GROUOP_ID_LBL}", "${com.esri.geoevent.transport.kafka-transport.GROUOP_ID_DESC}", true, false));
+      List<LabeledValue> authenticationTypes = new ArrayList<>();
+      authenticationTypes.add(new LabeledValue("${com.esri.geoevent.transport.kafka-transport.TLS_LBL}", TLS));
+      authenticationTypes.add(new LabeledValue("${com.esri.geoevent.transport.kafka-transport.SASL_KERBEROS_LBL}", SASL_KERBEROS));
+
+      propertyDefinitions.put(REQUIRE_AUTH, new PropertyDefinition(REQUIRE_AUTH, PropertyType.Boolean, false, "${com.esri.geoevent.transport.kafka-transport.REQUIRE_AUTH_LBL}", "${com.esri.geoevent.transport.kafka-transport.REQUIRE_AUTH_DESC}", true, false));
+      propertyDefinitions.put(AUTH_TYPE, new PropertyDefinition(AUTH_TYPE, PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.AUTH_TYPE_LBL}", "${com.esri.geoevent.transport.kafka-transport.AUTH_TYPE_DESC}", "requireAuth=true", false, false, authenticationTypes));
+
+      propertyDefinitions.put(CREDENTIAL_FILE_LOCATION, new PropertyDefinition(CREDENTIAL_FILE_LOCATION, PropertyType.FolderDataStore, "", "${com.esri.geoevent.transport.kafka-transport.CREDENTIAL_FILE_LOCATION_LBL}", "${com.esri.geoevent.transport.kafka-transport.CREDENTIAL_FILE_LOCATION_DESC}", "requireAuth=true", false, false));
+      propertyDefinitions.put(FILENAME, new PropertyDefinition(FILENAME, PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.CREDENTIAL_FILE_NAME_LBL}", "${com.esri.geoevent.transport.kafka-transport.CREDENTIAL_FILE_NAME_DESC}", "requireAuth=true", false, false));
+
+      propertyDefinitions.put(BOOTSTRAP_SERVERS, new PropertyDefinition(BOOTSTRAP_SERVERS, PropertyType.String, "localhost:9092", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_LBL}", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_DESC}", true, false));
+      propertyDefinitions.put(NUM_THREADS, new PropertyDefinition(NUM_THREADS, PropertyType.Integer, "1", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_LBL}", "${com.esri.geoevent.transport.kafka-transport.NUM_THREADS_DESC}", true, false));
+      propertyDefinitions.put(TOPIC, new PropertyDefinition(TOPIC, PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
     }
     catch (PropertyException e)
     {
@@ -56,7 +55,13 @@ public class KafkaInboundTransportDefinition extends TransportDefinitionBase {
   @Override
   public String getName()
   {
-    return "Kafka";
+    return "KafkaCustom";
+  }
+
+  @Override
+  public String getVersion()
+  {
+    return "10.7.1";
   }
 
   @Override
@@ -66,20 +71,14 @@ public class KafkaInboundTransportDefinition extends TransportDefinitionBase {
   }
 
   @Override
-  public String getVersion()
-  {
-    return "10.6.0";
-  }
-
-  @Override
   public String getLabel()
   {
-    return "${com.esri.geoevent.transport.kafka-transport.IN_LABEL}";
+    return "${com.esri.geoevent.transport.kafka-transport.OUT_LABEL}";
   }
 
   @Override
   public String getDescription()
   {
-    return "${com.esri.geoevent.transport.kafka-transport.IN_DESC}";
+    return "${com.esri.geoevent.transport.kafka-transport.OUT_DESC}";
   }
 }

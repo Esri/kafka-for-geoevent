@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
+	<reference id="folderDataStoreManagerService" interface="com.esri.ges.manager.datastore.folder.FolderDataStoreManager"/>
+
 	<bean id="kafkaInboundTransportServiceBean" class="com.esri.geoevent.transport.kafka.KafkaInboundTransportService" activation="eager">
 		<property name="bundleContext" ref="blueprintBundleContext"/>
+		<property name="folderSourceManager" ref="folderDataStoreManagerService"/>
 	</bean>
+
 	<service id="kafkaInboundTransportService" ref="kafkaInboundTransportServiceBean" interface="com.esri.ges.transport.TransportService"/>
 
 	<bean id="kafkaOutboundTransportServiceBean" class="com.esri.geoevent.transport.kafka.KafkaOutboundTransportService" activation="eager">
 		<property name="bundleContext" ref="blueprintBundleContext"/>
+		<property name="folderSourceManager" ref="folderDataStoreManagerService"/>
 	</bean>
 	<service id="kafkaOutboundTransportService" ref="kafkaOutboundTransportServiceBean" interface="com.esri.ges.transport.TransportService"/>
 </blueprint>
