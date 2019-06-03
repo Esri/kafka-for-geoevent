@@ -162,7 +162,7 @@ class KafkaInboundTransport extends InboundTransportBase
           kafkaConsumer.commitAsync();
         }
       }catch (Exception error){
-        //TODO: put daemon logic here
+        LOGGER.error("KAFKA_RUNNING_STATE_ERROR", error);
       }
       finally
       {
