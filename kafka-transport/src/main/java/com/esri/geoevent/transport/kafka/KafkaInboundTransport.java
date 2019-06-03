@@ -35,6 +35,8 @@ class KafkaInboundTransport extends InboundTransportBase
   private              AtomicBoolean            shutdownFlag                      = new AtomicBoolean(false);
   private              ExecutorService          executorService;
   private              List<KafkaEventConsumer> consumerList                      = new ArrayList<>();
+  private              String                   consumerGroupId;
+  private              boolean                  fromBeginning;
 
   KafkaInboundTransport(TransportDefinition definition) throws ComponentException
   {
@@ -53,6 +55,8 @@ class KafkaInboundTransport extends InboundTransportBase
     bootStrapServers = getProperty(KafkaInboundTransportDefinition.BOOTSTRAP_SERVERS).getValueAsString();
     numThreads = Converter.convertToInteger(getProperty(KafkaInboundTransportDefinition.NUM_THREADS).getValueAsString(), 1);
     topic = getProperty(KafkaInboundTransportDefinition.TOPIC).getValueAsString();
+    consumerGroupId = getProperty(KafkaInboundTransportDefinition.CONSUMER_GROUP_ID).getValueAsString();
+    fromBeginning = Boolean.parseBoolean(getProperty(KafkaInboundTransportDefinition.SEEK_FROM_BEGINNING).getValueAsString());
   }
 
   @Override
@@ -68,14 +72,14 @@ class KafkaInboundTransport extends InboundTransportBase
       throw new ValidationException(LOGGER.translate("NUM_THREADS_VALIDATE_ERROR"));
     configProperties = new Properties();
     configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootStrapServers);
-    configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, GEOEVENT_TRANSPORT_CONSUMER_GROUP);
-    configProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
     configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+    if (consumerGroupId.isEmpty())
+      configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, GEOEVENT_TRANSPORT_CONSUMER_GROUP);
+    else
+      configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
     GEKafkaAdminUtil.performAdminClientValidation(configProperties);
   }
-
-
 
   @Override
   public void start()
@@ -145,7 +149,7 @@ class KafkaInboundTransport extends InboundTransportBase
     {
       Thread.currentThread().setContextClassLoader(null);
       kafkaConsumer = new KafkaConsumer<>(configProperties);
-      kafkaConsumer.subscribe(Collections.singleton(topic), GeoEventKafkaConsumerRebalancer.getInstance());
+      kafkaConsumer.subscribe(Collections.singleton(topic), new GeoEventKafkaConsumerRebalancer(fromBeginning, kafkaConsumer));
     }
 
     @Override
@@ -161,7 +165,9 @@ class KafkaInboundTransport extends InboundTransportBase
             this.sendBytesToAdapter();
           kafkaConsumer.commitAsync();
         }
-      }catch (Exception error){
+      }
+      catch (Exception error)
+      {
         LOGGER.error("KAFKA_RUNNING_STATE_ERROR", error);
       }
       finally

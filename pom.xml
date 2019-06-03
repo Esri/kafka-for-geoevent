@@ -32,6 +32,11 @@
 			<artifactId>kafka-clients</artifactId>
 			<version>${kafka.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.xml.bind</artifactId>
+			<version>LATEST</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<pluginManagement>

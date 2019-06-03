@@ -11,33 +11,29 @@ import java.util.Collection;
 public class GeoEventKafkaConsumerRebalancer implements ConsumerRebalanceListener
 {
 
-  private BundleLogger LOGGER = BundleLoggerFactory.getLogger(GeoEventKafkaConsumerRebalancer.class);
+  private boolean                       isFromBeginning;
+  private KafkaConsumer<byte[], byte[]> consumer;
+  private BundleLogger                  LOGGER = BundleLoggerFactory.getLogger(GeoEventKafkaConsumerRebalancer.class);
 
-  private static GeoEventKafkaConsumerRebalancer geoEventKafkaConsumerRebalancer = null;
 
-  private GeoEventKafkaConsumerRebalancer()
+  public GeoEventKafkaConsumerRebalancer(boolean fromBeginning, KafkaConsumer<byte[], byte[]> kafkaConsumer)
   {
-
+    isFromBeginning = fromBeginning;
+    consumer = kafkaConsumer;
   }
 
-  public static GeoEventKafkaConsumerRebalancer getInstance()
-  {
-    if (geoEventKafkaConsumerRebalancer == null)
-      geoEventKafkaConsumerRebalancer = new GeoEventKafkaConsumerRebalancer();
-    return geoEventKafkaConsumerRebalancer;
-  }
 
   @Override
   public void onPartitionsRevoked(Collection<TopicPartition> partitions)
   {
-    partitions.forEach(topicPartition ->
-        LOGGER.info("PARTITION_REVOKED_ON_TOPIC: " + topicPartition.topic() )
-    );
+    partitions.forEach(topicPartition -> LOGGER.info("PARTITION_REVOKED_ON_TOPIC: " + topicPartition.topic()));
   }
 
   @Override
   public void onPartitionsAssigned(Collection<TopicPartition> partitions)
   {
+    if (isFromBeginning)
+      consumer.seekToBeginning(partitions);
     partitions.forEach(topicPartition -> LOGGER.info("PARTITION_ASSIGNED_ON_TOPIC: " + topicPartition.topic()));
   }
 

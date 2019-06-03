@@ -8,14 +8,18 @@ import com.esri.ges.framework.i18n.BundleLoggerFactory;
 import com.esri.ges.transport.TransportDefinitionBase;
 import com.esri.ges.transport.TransportType;
 
-class KafkaOutboundTransportDefinition extends TransportDefinitionBase {
-  private static final BundleLogger LOGGER = BundleLoggerFactory.getLogger(KafkaOutboundTransportDefinition.class);
-  public static final String BOOTSTRAP_SERVERS = "kafkaServers";
-  public static final String TOPIC = "topic";
+class KafkaOutboundTransportDefinition extends TransportDefinitionBase
+{
+  private static final BundleLogger LOGGER            = BundleLoggerFactory.getLogger(KafkaOutboundTransportDefinition.class);
+  public static final  String       BOOTSTRAP_SERVERS = "kafkaServers";
+  public static final  String       TOPIC             = "topic";
 
-  KafkaOutboundTransportDefinition() {
+
+  KafkaOutboundTransportDefinition()
+  {
     super(TransportType.OUTBOUND);
-    try {
+    try
+    {
       propertyDefinitions.put(BOOTSTRAP_SERVERS, new PropertyDefinition(BOOTSTRAP_SERVERS, PropertyType.String, "localhost:9092", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_LBL}", "${com.esri.geoevent.transport.kafka-transport.BOOTSTRAP_DESC}", true, false));
       propertyDefinitions.put(TOPIC, new PropertyDefinition(TOPIC, PropertyType.String, "", "${com.esri.geoevent.transport.kafka-transport.TOPIC_LBL}", "${com.esri.geoevent.transport.kafka-transport.TOPIC_DESC}", true, false));
     }
@@ -30,11 +34,12 @@ class KafkaOutboundTransportDefinition extends TransportDefinitionBase {
   @Override
   public String getName()
   {
-    return "KafkaCustom";
+    return "KafkaTransport";
   }
 
   @Override
-  public String getDomain(){
+  public String getDomain()
+  {
     return "com.esri.geoevent.transport.outbound";
   }
 
