@@ -61,7 +61,7 @@ class KafkaInboundTransport extends InboundTransportBase
     super.validate();
 
     if (bootStrapServers.isEmpty())
-      throw new ValidationException(LOGGER.translate("ZKCONNECT_VALIDATE_ERROR"));
+      throw new ValidationException(LOGGER.translate("BOOTSTRAP_VALIDATE_ERROR"));
     if (topic.isEmpty())
       throw new ValidationException(LOGGER.translate("TOPIC_VALIDATE_ERROR"));
     if (numThreads < 1)
@@ -124,9 +124,9 @@ class KafkaInboundTransport extends InboundTransportBase
     {
       executorService.awaitTermination(5000, TimeUnit.MILLISECONDS);
     }
-    catch (InterruptedException e)
+    catch (InterruptedException error)
     {
-      e.printStackTrace();
+      error.printStackTrace();
     }
   }
 

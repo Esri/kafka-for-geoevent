@@ -12,6 +12,7 @@ import com.esri.ges.transport.TransportDefinition;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 
 import java.nio.ByteBuffer;
@@ -19,11 +20,11 @@ import java.util.Properties;
 
 class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAwareTransport
 {
-  private static final BundleLogger           LOGGER = BundleLoggerFactory.getLogger(KafkaOutboundTransport.class);
-  private              KafkaEventProducer     kafkaEventProducer;
-  private              String                 bootstrap_servers;
-  private              String                 topic;
-  private              Properties             producerProps;
+  private static final BundleLogger                  LOGGER = BundleLoggerFactory.getLogger(KafkaOutboundTransport.class);
+  private              KafkaEventProducer            kafkaEventProducer;
+  private              String                        bootstrap_servers;
+  private              String                        topic;
+  private              Properties                    producerProps;
   private              KafkaProducer<byte[], byte[]> producer;
 
   KafkaOutboundTransport(TransportDefinition definition) throws ComponentException
@@ -52,7 +53,7 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
 
   public synchronized void start()
   {
-        connect();
+    connect();
   }
 
   @Override
@@ -84,10 +85,12 @@ class KafkaOutboundTransport extends OutboundTransportBase implements GeoEventAw
     producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
     producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
     producerProps.put(ProducerConfig.CLIENT_ID_CONFIG, "kafka-for-geoevent");
-    producerProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true); //ensures exactly once delivery semantic, durability but with some performance cost as ACKS is set to all when this is set to true.
+    Node[] allNodesIncluster = GEKafkaAdminUtil.listAllNodesInCluster(producerProps).toArray(new Node[] {});
+    //check all the brokers in the cluster to ensure API compatibility before applying the idempotency configuration.
+    if (GEKafkaAdminUtil.checkAPILevelCompatibility(allNodesIncluster))
+      producerProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true); //ensures exactly once delivery semantic, durability but with some performance cost as ACKS is set to all when this is set to true.
     GEKafkaAdminUtil.performAdminClientValidation(producerProps);
   }
-
 
   private synchronized void disconnect(String reason)
   {
