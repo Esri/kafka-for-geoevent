@@ -4,14 +4,12 @@
 
 	<bean id="kafkaInboundTransportServiceBean" class="com.esri.geoevent.transport.kafka.KafkaInboundTransportService" activation="eager">
 		<property name="bundleContext" ref="blueprintBundleContext"/>
-		<property name="folderSourceManager" ref="folderDataStoreManagerService"/>
 	</bean>
 
 	<service id="kafkaInboundTransportService" ref="kafkaInboundTransportServiceBean" interface="com.esri.ges.transport.TransportService"/>
 
 	<bean id="kafkaOutboundTransportServiceBean" class="com.esri.geoevent.transport.kafka.KafkaOutboundTransportService" activation="eager">
 		<property name="bundleContext" ref="blueprintBundleContext"/>
-		<property name="folderSourceManager" ref="folderDataStoreManagerService"/>
 	</bean>
 	<service id="kafkaOutboundTransportService" ref="kafkaOutboundTransportServiceBean" interface="com.esri.ges.transport.TransportService"/>
 </blueprint>

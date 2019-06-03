@@ -3,10 +3,8 @@ package com.esri.geoevent.transport.kafka;
 import com.esri.ges.core.component.ComponentException;
 import com.esri.ges.core.component.RunningState;
 import com.esri.ges.core.validation.ValidationException;
-import com.esri.ges.datastore.folder.FolderDataStore;
 import com.esri.ges.framework.i18n.BundleLogger;
 import com.esri.ges.framework.i18n.BundleLoggerFactory;
-import com.esri.ges.manager.datastore.folder.FolderDataStoreManager;
 import com.esri.ges.transport.InboundTransportBase;
 import com.esri.ges.transport.TransportDefinition;
 import com.esri.ges.util.Converter;
@@ -15,12 +13,13 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -36,16 +35,10 @@ class KafkaInboundTransport extends InboundTransportBase
   private              AtomicBoolean            shutdownFlag                      = new AtomicBoolean(false);
   private              ExecutorService          executorService;
   private              List<KafkaEventConsumer> consumerList                      = new ArrayList<>();
-  private              boolean                  requireAuth;
-  private              String                   authenticationType;
-  private              String                   credentialFileLocation;
-  private              String                   credentialFileName;
-  private              FolderDataStoreManager   folderDataStoreManager;
 
-  KafkaInboundTransport(TransportDefinition definition, FolderDataStoreManager folderDataStoreManager) throws ComponentException
+  KafkaInboundTransport(TransportDefinition definition) throws ComponentException
   {
     super(definition);
-    this.folderDataStoreManager = folderDataStoreManager;
   }
 
   public boolean isClusterable()
@@ -57,10 +50,6 @@ class KafkaInboundTransport extends InboundTransportBase
   public void afterPropertiesSet()
   {
     super.afterPropertiesSet();
-    requireAuth = Boolean.parseBoolean(getProperty(KafkaInboundTransportDefinition.REQUIRE_AUTH).getValueAsString());
-    authenticationType = getProperty(KafkaInboundTransportDefinition.AUTH_TYPE).getValueAsString();
-    credentialFileLocation = getProperty(KafkaInboundTransportDefinition.CREDENTIAL_FILE_LOCATION).getValueAsString();
-    credentialFileName = getProperty(KafkaInboundTransportDefinition.FILENAME).getValueAsString();
     bootStrapServers = getProperty(KafkaInboundTransportDefinition.BOOTSTRAP_SERVERS).getValueAsString();
     numThreads = Converter.convertToInteger(getProperty(KafkaInboundTransportDefinition.NUM_THREADS).getValueAsString(), 1);
     topic = getProperty(KafkaInboundTransportDefinition.TOPIC).getValueAsString();
@@ -83,41 +72,10 @@ class KafkaInboundTransport extends InboundTransportBase
     configProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
     configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
     configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
-
-    if (requireAuth)
-    {
-      if (authenticationType.isEmpty() || credentialFileName.isEmpty())
-      {
-        throw new ValidationException(LOGGER.translate("CREDENTIAL_DETAILS_REQUIRED"));
-      }
-      try
-      {
-        FolderDataStore folderDataStore = folderDataStoreManager.getFolderDataStore(credentialFileLocation);
-        createConfigParamsFromFile(authenticationType, folderDataStore.getPath().getAbsolutePath());
-      }
-      catch (FileNotFoundException error)
-      {
-        LOGGER.error("CREDENTIAL_FILE_NOT_AVAILABLE", error.getMessage());
-      }
-    }
+    GEKafkaAdminUtil.performAdminClientValidation(configProperties);
   }
 
-  private void createConfigParamsFromFile(String authenticationType, String credentialFileLocation) throws FileNotFoundException
-  {
-    if (authenticationType.equalsIgnoreCase("SASL/Kerberos"))
-      configProperties.put("com.sun.security.auth.module.Krb5LoginModule", "required");
 
-    try (Scanner scanner = new Scanner(new File(credentialFileLocation)))
-    {
-      scanner.useDelimiter("\n");
-      while (scanner.hasNext())
-      {
-        String readLine = scanner.next();
-        String splitString[] = readLine.split("=", 0);
-        configProperties.put(splitString[0], splitString[1]);
-      }
-    }
-  }
 
   @Override
   public void start()
@@ -161,6 +119,7 @@ class KafkaInboundTransport extends InboundTransportBase
       eventConsumer.shutdown();
     });
     executorService.shutdown();
+    consumerList.clear();
     try
     {
       executorService.awaitTermination(5000, TimeUnit.MILLISECONDS);
@@ -202,6 +161,8 @@ class KafkaInboundTransport extends InboundTransportBase
             this.sendBytesToAdapter();
           kafkaConsumer.commitAsync();
         }
+      }catch (Exception error){
+        //TODO: put daemon logic here
       }
       finally
       {

@@ -7,7 +7,6 @@ import com.esri.ges.transport.TransportServiceBase;
 
 public class KafkaOutboundTransportService extends TransportServiceBase
 {
-  protected FolderDataStoreManager folderSourceManager;
 
   public KafkaOutboundTransportService() {
     definition = new KafkaOutboundTransportDefinition();
@@ -15,10 +14,7 @@ public class KafkaOutboundTransportService extends TransportServiceBase
 
   @Override
   public Transport createTransport() throws ComponentException {
-    return new KafkaOutboundTransport(definition, folderSourceManager);
+    return new KafkaOutboundTransport(definition);
   }
 
-  public void setFolderSourceManager(FolderDataStoreManager folderSourceManager){
-    this.folderSourceManager = folderSourceManager;
-  }
 }
