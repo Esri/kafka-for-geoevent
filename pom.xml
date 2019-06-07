@@ -18,24 +18,9 @@
 	</modules>
 	<dependencies>
 		<dependency>
-			<groupId>com.esri.geoevent.sdk</groupId>
-			<artifactId>geoevent-sdk</artifactId>
-			<version>10.7.1</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.zookeeper</groupId>
-			<artifactId>zookeeper</artifactId>
-			<version>3.5.5</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
 			<version>${kafka.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.xml.bind</artifactId>
-			<version>LATEST</version>
 		</dependency>
 	</dependencies>
 	<build>
@@ -46,6 +31,13 @@
 					<artifactId>maven-bundle-plugin</artifactId>
 					<extensions>true</extensions>
 					<version>${maven.bundle.plugin.version}</version>
+					<configuration>
+						<instructions>
+							<Embed-Dependency>
+								kafka-clients;scope=compile|runtime;inline=true
+							</Embed-Dependency>
+						</instructions>
+					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>

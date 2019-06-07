@@ -27,17 +27,17 @@ import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
 
-import javax.xml.bind.ValidationException;
 import java.util.Collection;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 
 public class GEKafkaTimerTask extends TimerTask
 {
 
-  private static final BundleLogger                  LOGGER = BundleLoggerFactory.getLogger(GEKafkaTimerTask.class);
-  private final        AdminClient                   adminClient;
-  private final        Timer                         timer;
+  private static final BundleLogger LOGGER          = BundleLoggerFactory.getLogger(GEKafkaTimerTask.class);
+  private              AdminClient  adminClient;
+  private              Timer        timer;
 
   public GEKafkaTimerTask(AdminClient adminClient, Timer timer)
   {
@@ -45,31 +45,26 @@ public class GEKafkaTimerTask extends TimerTask
     this.timer = timer;
   }
 
-
   @Override
   public void run()
   {
     DescribeClusterResult clusterDescription = adminClient.describeCluster();
     KafkaFuture<Collection<Node>> clusterNodes = clusterDescription.nodes();
-    clusterNodes.whenComplete((nodes, throwable) -> {
-      if (throwable != null && throwable.getMessage().equalsIgnoreCase("Timed out waiting for a node assignment."))
+    try
+    {
+
+      long count = clusterNodes.get().stream().count();
+      if (count > 0)
       {
-        try
-        {
-          throw new ValidationException(LOGGER.translate("PROBLEM_WITH_CLUSTER", throwable.getMessage()));
-        }
-        catch (ValidationException error)
-        {
-          LOGGER.error("PROBLEM_WITH_CLUSTER", error);
-        }
-      }
-      long numOfNodes = nodes.stream().count();
-      if (numOfNodes > 0)
-      {
-        this.cancel();
+        cancel();
         timer.cancel();
         timer.purge();
       }
-    });
+    }
+    catch (InterruptedException | ExecutionException intEx)
+    {
+      LOGGER.error("PROBLEM_WITH_CLUSTER", intEx);
+    }
+
   }
 }

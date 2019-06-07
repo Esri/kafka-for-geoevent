@@ -25,7 +25,6 @@ import org.apache.kafka.clients.admin.DescribeClusterOptions;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.protocol.ApiKeys;
-import org.apache.kafka.common.requests.ApiVersionsResponse;
 
 import java.util.*;
 
@@ -37,9 +36,8 @@ public class GEKafkaAdminUtil
     AdminClient adminClient = AdminClient.create(configProperties);
     DescribeClusterOptions describeOptions = new DescribeClusterOptions();
     describeOptions.timeoutMs(Integer.valueOf(10));
-
     Timer timer = new Timer("ReconnectionTimer");
-    TimerTask timerTask = new GEKafkaTimerTask(adminClient, timer);
+    GEKafkaTimerTask timerTask = new GEKafkaTimerTask(adminClient, timer);
     timer.scheduleAtFixedRate(timerTask, 0L, 10000L);
   }
 

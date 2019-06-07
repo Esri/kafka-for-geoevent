@@ -30,6 +30,7 @@ import com.esri.ges.util.Converter;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
 import java.nio.ByteBuffer;
@@ -101,19 +102,19 @@ class KafkaInboundTransport extends InboundTransportBase
   }
 
   @Override
-  public void start()
+  public synchronized void start()
   {
     connect();
     setRunningState(RunningState.STARTED);
   }
 
   @Override
-  public void stop()
+  public synchronized void stop()
   {
     disconnect("");
   }
 
-  private void disconnect(String reason)
+  private synchronized void disconnect(String reason)
   {
     if (!RunningState.STOPPED.equals(getRunningState()))
     {
@@ -124,7 +125,7 @@ class KafkaInboundTransport extends InboundTransportBase
     }
   }
 
-  private void connect()
+  private synchronized void connect()
   {
     setRunningState(RunningState.STARTING);
     shutdownFlag.set(false);
@@ -136,24 +137,24 @@ class KafkaInboundTransport extends InboundTransportBase
     });
   }
 
-  private void shutdownConsumer()
+  private synchronized void shutdownConsumer()
   {
     consumerList.forEach(eventConsumer -> {
       eventConsumer.shutdown();
     });
     executorService.shutdown();
-    consumerList.clear();
     try
     {
       executorService.awaitTermination(5000, TimeUnit.MILLISECONDS);
     }
     catch (InterruptedException error)
     {
-      error.printStackTrace();
+      LOGGER.error("THREAD_SHUTDOWN_ERROR", error);
     }
+    consumerList.clear();
   }
 
-  public void shutdown()
+  public synchronized void shutdown()
   {
     super.shutdown();
     shutdownConsumer();
@@ -185,16 +186,21 @@ class KafkaInboundTransport extends InboundTransportBase
           kafkaConsumer.commitAsync();
         }
       }
-      catch (Exception error)
+      catch (KafkaException | IllegalArgumentException | IllegalStateException state)
       {
-        LOGGER.error("KAFKA_RUNNING_STATE_ERROR", error);
+        LOGGER.error("POLL_PROBLEM", state);
+        kafkaConsumer.unsubscribe();
+        kafkaConsumer.close();
       }
       finally
       {
         if (shutdownFlag.get())
         {
-          kafkaConsumer.unsubscribe();
-          kafkaConsumer.close();
+          if (kafkaConsumer != null)
+          {
+            kafkaConsumer.unsubscribe();
+            kafkaConsumer.close();
+          }
         }
       }
     }
