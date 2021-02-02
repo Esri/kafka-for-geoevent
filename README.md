@@ -1,3 +1,5 @@
+The Kafka Connector has been moved into the GeoEvent Product. This external gallery item connector GitHub repository have been deprecated.  For issues or enhancement requests related to the OOTB Kafka Connectors, please contact Esri Technical Support or the [GeoEvent Team on GeoNet](https://community.esri.com/t5/arcgis-geoevent-server/ct-p/arcgis-geoevent-server).
+
 # kafka-for-geoevent
 
 ArcGIS GeoEvent Server sample Kafka connectors for connecting to Kafka message servers to send and/or receive text messages.
