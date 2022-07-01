@@ -11,7 +11,7 @@
 		<contact.address>geoevent@esri.com</contact.address>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.bundle.plugin.version>2.3.6</maven.bundle.plugin.version>
-		<kafka.version>0.10.1.1</kafka.version>
+		<kafka.version>0.10.2.2</kafka.version>
 	</properties>
 	<modules>
 		<module>kafka-transport</module>
